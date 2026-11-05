@@ -32,11 +32,39 @@ app.post ('/create-event', async(req,res) => {
     res.send(result)
 })
 
+app.get("/events", async (req, res) => {
+  try {
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Dhaka",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
+
+    const events = await eventCollection
+      .find({
+        eventDate: { $gt: today },
+      })
+      .sort({ eventDate: 1 })
+      .limit(Number(req.query.limit) || 0)
+      .toArray();
+
+    res.status(200).json(events);
+
+  } 
+catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch events",
+    });
+  }
+});
+
+http://localhost:8000/events
+
 app.get('/', (req, res) => {
   res.send('Hello World!');
 });
-
-http://localhost:8000/create-event
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
