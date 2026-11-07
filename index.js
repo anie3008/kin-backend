@@ -102,6 +102,16 @@ app.get("/my-events/:email", async (req, res) => {
     }
 });
 
+app.patch('/edit-event/:id', async(req,res) =>{
+  const {id} = req.params
+  const data = req.body
+  const result = await eventCollection.updateOne(
+    {_id: new ObjectId(id)},
+    {$set:data}
+  )
+  res.send(result)
+})
+
 app.delete("/delete-event/:id", async (req, res) => {
   const result = await eventCollection.deleteOne({
     _id: new ObjectId(req.params.id),
@@ -110,7 +120,7 @@ app.delete("/delete-event/:id", async (req, res) => {
   res.send(result);
 });
 
-http://localhost:8000/my-events/:email
+http://localhost:8000/update-event/${id}
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
