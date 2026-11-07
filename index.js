@@ -67,6 +67,11 @@ app.get('/events/:id', async(req, res) => {
 
     res.send(result)
 })
+app.get('/my-events',async(req, res) => {
+  const email = req.params.email;
+  const result = await eventCollection.find({email: email}).toArray();
+  res.send(result)
+})
 
 app.post('/joined-event', async(req, res) => {
   const data = req.body
@@ -78,10 +83,34 @@ app.get('/joined-events/:email', async(req, res) => {
   const {email} = req.params
   const result = await joinedEventCollection.find({email:email}). toArray()
     res.send(result)
-  
+  console.log(result);
 })
 
-http://localhost:8000/joined-events
+app.get("/my-events/:email", async (req, res) => {
+    try {
+        const { email } = req.params;
+
+        const result = await eventCollection
+            .find({ creatorEmail: email })
+            .toArray();
+
+        res.send(result);
+    } catch (error) {
+        res.status(500).send({
+            message: "Failed to fetch my events"
+        });
+    }
+});
+
+app.delete("/delete-event/:id", async (req, res) => {
+  const result = await eventCollection.deleteOne({
+    _id: new ObjectId(req.params.id),
+  });
+
+  res.send(result);
+});
+
+http://localhost:8000/my-events/:email
 
 app.get('/', (req, res) => {
   res.send('Hello World!');
