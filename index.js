@@ -10,6 +10,7 @@ const port = 8000;
 app.use(cors())
 app.use(express.json())
 
+
 const client = new MongoClient(process.env.MONGODB_URI);
 
 export async function connectToMongoDB() {
@@ -23,35 +24,35 @@ export async function connectToMongoDB() {
 }
 const mongoClient = await connectToMongoDB();
 
-const db = mongoClient. db("kin")
+const db = mongoClient.db("kin")
 const eventCollection = db.collection('event')
 const joinedEventCollection = db.collection('joinedEvent')
 
-const verifyToken = async(req, res, next) => {
+const verifyToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if(!authHeader) {
-    return res.status(401).send({msg: "unAuthorized"});
+  if (!authHeader) {
+    return res.status(401).send({ msg: "unAuthorized" });
   };
   const token = authHeader.split(" ")[1]
-if(!token){
-  return res.status(500).send({msg: "server error!"});
+  if (!token) {
+    return res.status(500).send({ msg: "server error!" });
+  }
+
+  const jwks = createRemoteJWKSet(new URL(`${process.env.BETTER_AUTH_URL}/api/auth/jwks`))
+
+  try {
+    const { payload } = await jwtVerify(token, jwks);
+    next();
+  } catch (error) {
+    return res.status(500).send({ msg: "server error!" });
+  }
 }
 
-const jwks = createRemoteJWKSet(new URL ('http://localhost:3000/api/auth/jwks'))
-
-try{
-const {payload} = await jwtVerify(token, jwks);
-next();
-}catch (error) {
-  return res.status(500).send({msg: "server error!"});
-} 
-}
-
-app.post ('/create-event',verifyToken, async(req,res) => {
-    const data = req.body
-    const result = await eventCollection.insertOne(data)
-    console.log(result);
-    res.send(result)
+app.post('/create-event', verifyToken, async (req, res) => {
+  const data = req.body
+  const result = await eventCollection.insertOne(data)
+  console.log(result);
+  res.send(result)
 })
 
 app.get("/events", async (req, res) => {
@@ -73,8 +74,8 @@ app.get("/events", async (req, res) => {
 
     res.status(200).json(events);
 
-  } 
-catch (error) {
+  }
+  catch (error) {
     console.error(error);
     res.status(500).json({
       message: "Failed to fetch events",
@@ -82,53 +83,53 @@ catch (error) {
   }
 });
 
-app.get('/events/:id',verifyToken, async(req, res) => {
-    const {id} = req.params
-    const result = await eventCollection.findOne({_id: new ObjectId(id)})
+app.get('/events/:id', verifyToken, async (req, res) => {
+  const { id } = req.params
+  const result = await eventCollection.findOne({ _id: new ObjectId(id) })
 
-    res.send(result)
+  res.send(result)
 })
-app.get('/my-events',async(req, res) => {
+app.get('/my-events', async (req, res) => {
   const email = req.params.email;
-  const result = await eventCollection.find({email: email}).toArray();
+  const result = await eventCollection.find({ email: email }).toArray();
   res.send(result)
 })
 
-app.post('/joined-event', async(req, res) => {
+app.post('/joined-event', async (req, res) => {
   const data = req.body
   const result = await joinedEventCollection.insertOne(data)
   res.send(result)
 })
 
-app.get('/joined-events/:email', async(req, res) => {
-  const {email} = req.params
-  const result = await joinedEventCollection.find({email:email}). toArray()
-    res.send(result)
+app.get('/joined-events/:email', async (req, res) => {
+  const { email } = req.params
+  const result = await joinedEventCollection.find({ email: email }).toArray()
+  res.send(result)
   console.log(result);
 })
 
 app.get("/my-events/:email", async (req, res) => {
-    try {
-        const { email } = req.params;
+  try {
+    const { email } = req.params;
 
-        const result = await eventCollection
-            .find({ creatorEmail: email })
-            .toArray();
+    const result = await eventCollection
+      .find({ creatorEmail: email })
+      .toArray();
 
-        res.send(result);
-    } catch (error) {
-        res.status(500).send({
-            message: "Failed to fetch my events"
-        });
-    }
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({
+      message: "Failed to fetch my events"
+    });
+  }
 });
 
-app.patch('/edit-event/:id', async(req,res) =>{
-  const {id} = req.params
+app.patch('/edit-event/:id', async (req, res) => {
+  const { id } = req.params
   const data = req.body
   const result = await eventCollection.updateOne(
-    {_id: new ObjectId(id)},
-    {$set:data}
+    { _id: new ObjectId(id) },
+    { $set: data }
   )
   res.send(result)
 })
@@ -150,3 +151,5 @@ app.get('/', (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
+
+export default app;
